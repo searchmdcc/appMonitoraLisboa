@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">AppMonitoraLisboa</string>
+    <string name="title_activity_locais_maps">LocaisMapsActivity</string>
+    <string name="title_activity_local_maps">LocalMapsActivity</string>
+    <string name = "google_maps_key" templateMergeStrategy="preserve" translatable="false">AIzaSyCw13izRRqOCRHhkyqmTU-A4UgePUWVxik</string>
+
+</resources>

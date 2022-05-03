@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    tools:context=".activities.MainActivity">
+
+    <ImageView
+        android:id="@+id/imageView4"
+        android:layout_width="match_parent"
+        android:layout_height="194dp"
+        app:srcCompat="@mipmap/t_foreground" />
+
+    <TextView
+        android:id="@+id/txtData"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Data:"
+        android:textAlignment="center"
+        android:textSize="16sp" />
+
+    <TextView
+        android:id="@+id/txtInformes"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Informações do Tempo:"
+        android:textAlignment="center"
+        android:textSize="24sp"
+        android:textStyle="bold" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="15dp"
+        android:layout_marginTop="15dp"
+        android:layout_marginRight="15dp"
+        android:layout_marginBottom="15dp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/txtTemperatura"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Temperatura: 25ºC "
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/txtUmidade"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Umidade: 65% "
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/txtVento"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Vento: 60 km/h"
+            android:textSize="16sp" />
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/btnAtualizar"
+        android:layout_width="match_parent"
+        android:layout_height="72dp"
+        android:layout_weight="1"
+        android:onClick="atualizarDados"
+        android:text="Atualizar"
+        android:textSize="16sp" />
+
+    <TextView
+        android:id="@+id/txtInformes2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Outras Informações"
+        android:textAlignment="center"
+        android:textSize="20sp" />
+
+    <Button
+        android:id="@+id/btnBuscaLocal"
+        android:layout_width="match_parent"
+        android:layout_height="72dp"
+        android:text="Visualizar por local"
+        android:textSize="16sp" />
+
+    <Button
+        android:id="@+id/btnQualidadeAr"
+        android:layout_width="match_parent"
+        android:layout_height="72dp"
+        android:text="Qualidade do Ar"
+        android:textSize="16sp" />
+
+    <Button
+        android:id="@+id/btnNotificacoes"
+        android:layout_width="match_parent"
+        android:layout_height="72dp"
+        android:text="Notificações"
+        android:textSize="16sp" />
+</LinearLayout>
