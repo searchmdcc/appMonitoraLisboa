@@ -1,24 +1,24 @@
 package com.example.appmonitoralisboa.model;
 
 public class Estacoes {
-    private String lat;
-    private String lgt;
+    private double lat;
+    private double lgt;
     private String endereco;
     private String est;
 
-    public String getLat() {
+    public double getLat() {
         return lat;
     }
 
-    public void setLat(String lat) {
+    public void setLat(double lat) {
         this.lat = lat;
     }
 
-    public String getLgt() {
+    public double getLgt() {
         return lgt;
     }
 
-    public void setLgt(String lgt) {
+    public void setLgt(double lgt) {
         this.lgt = lgt;
     }
 

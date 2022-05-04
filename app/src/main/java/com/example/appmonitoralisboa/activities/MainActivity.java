@@ -58,6 +58,13 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
+        qualidadeAr.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent =new Intent(getApplicationContext(), QAActivity.class);
+                startActivity(intent);
+            }
+        });
 
     }
 

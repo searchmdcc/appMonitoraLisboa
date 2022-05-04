@@ -38,7 +38,7 @@ public class LocalMapsActivity extends FragmentActivity implements OnMapReadyCal
 
     private GoogleMap mMap;
     private ActivityLocalMapsBinding binding;
-    private ArrayList<Estacoes> ListaEstacoes;
+    private ArrayList<Estacoes> ListaEstacoes = new ArrayList<Estacoes>();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -66,71 +66,81 @@ public class LocalMapsActivity extends FragmentActivity implements OnMapReadyCal
      */
     @Override
     public void onMapReady(GoogleMap googleMap) {
+        Log.info("testando carregamento mapa", "Mapa sendo carregado..marcadores");
         mMap = googleMap;
-        if(ListaEstacoes!=null) {
+
+    }
+    public void marcarMapa() {
+        if (ListaEstacoes != null) {
             for (int i = 0; i < ListaEstacoes.size(); i++) {
                 Log.info("onPosExecuteMapa", "colocando marcações");
-                LatLng coordenadas = new LatLng(Double.parseDouble(ListaEstacoes.get(i).getLat()), Double.parseDouble(ListaEstacoes.get(i).getLgt()));
+                LatLng coordenadas = new LatLng(ListaEstacoes.get(i).getLat(), ListaEstacoes.get(i).getLgt());
                 mMap.addMarker(new MarkerOptions().position(coordenadas).title("Estação " + ListaEstacoes.get(i).getEst())).setSnippet("Rua: " + ListaEstacoes.get(i).getEndereco());
                 mMap.moveCamera(CameraUpdateFactory.newLatLng(coordenadas));
                 Log.info("onPosExecuteMapa", "ok");
             }
         }
-
-
-
     }
 
 
-
-    class ProcessarLocais extends AsyncTask<Void, Void, ResultSet> {
-        //fuseki não suporta agregação avg criar iot-stream e consultá-lo
-        @Override
-        protected ResultSet doInBackground(Void... voids) {
-            String consulta = "PREFIX sosa: <http://www.w3.org/ns/sosa/>\n" +
-                    "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns/>\n" +
-                    "PREFIX ssn: <http://www.w3.org/ns/ssn/>\n" +
-                    "PREFIX ex: <http://example.com/>\n" +
-                    "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema/>\n" +
-                    "PREFIX owl: <http://www.w3.org/2002/07/owl/>\n" +
-                    "PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos/>\n" +
-                    "\n" +
-                    "select distinct ?lat ?long ?end ?est where{\n" +
-                    "  ?sensor rdf:type ssn:Sensor;\n" +
-                    "          ex:belongsStation ?estacao.\n" +
-                    "  ?estacao rdfs:label ?est;\n" +
-                    "  \t\t\towl:sameAs ?dataEst.\n" +
-                    "  ?dataEst ex:hasAddress ?endereco.\n" +
-                    "  ?endereco rdfs:label ?end;\n" +
-                    "            geo:location ?loc.\n" +
-                    "  ?loc geo:lat ?lat;\n" +
-                    "       geo:long ?long.\n" +
-                    "\n" +
-                    "           \n" +
-                    "     \n" +
-                    "}";
-            Query query = QueryFactory.create(consulta);
-            QueryExecution qexec = QueryExecutionFactory.createServiceRequest("http://172.18.0.1:3030/Observations/query", query);
-            ResultSet results = qexec.execSelect();
-            return results;
-        }
-
-        @Override
-        protected void onPostExecute(ResultSet results) {
-            super.onPostExecute(results);
-            Estacoes estacoes = new Estacoes();
-            Log.info("onPosExecuteMapa", "onPos");
-            while (results.hasNext()) {
-                QuerySolution solution = results.nextSolution();
-                estacoes.setLat(solution.getLiteral("lat").getString());
-                estacoes.setLgt(solution.getLiteral("long").getString());
-                estacoes.setEndereco(solution.getLiteral("end").getString());
-                estacoes.setEst(solution.getLiteral("est").getString());
-                ListaEstacoes.add(estacoes);
-                Log.info("onPosExecuteMapa", "adcionando");
+        class ProcessarLocais extends AsyncTask<Void, Void, ResultSet> {
+            //fuseki não suporta agregação avg criar iot-stream e consultá-lo
+            @Override
+            protected ResultSet doInBackground(Void... voids) {
+                String consulta = "PREFIX sosa: <http://www.w3.org/ns/sosa/>\n" +
+                        "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns/>\n" +
+                        "PREFIX ssn: <http://www.w3.org/ns/ssn/>\n" +
+                        "PREFIX ex: <http://example.com/>\n" +
+                        "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema/>\n" +
+                        "PREFIX owl: <http://www.w3.org/2002/07/owl/>\n" +
+                        "PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos/>\n" +
+                        "\n" +
+                        "select distinct ?lat ?long ?end ?est where{\n" +
+                        "  ?sensor rdf:type ssn:Sensor;\n" +
+                        "          ex:belongsStation ?estacao.\n" +
+                        "  ?estacao rdfs:label ?est;\n" +
+                        "  \t\t\towl:sameAs ?dataEst.\n" +
+                        "  ?dataEst ex:hasAddress ?endereco.\n" +
+                        "  ?endereco rdfs:label ?end;\n" +
+                        "            geo:location ?loc.\n" +
+                        "  ?loc geo:lat ?lat;\n" +
+                        "       geo:long ?long.\n" +
+                        "\n" +
+                        "           \n" +
+                        "     \n" +
+                        "}";
+                Query query = QueryFactory.create(consulta);
+                QueryExecution qexec = QueryExecutionFactory.createServiceRequest("http://172.18.0.1:3030/MetadataSensors/query", query);
+                ResultSet results = qexec.execSelect();
+                if (results != null) {
+                    Log.info("onPosExecuteMapa", "A consulta está retornando");
+                }
+                return results;
             }
-            Log.info("onPosExecuteMapa", "lista criada");
 
+            @Override
+            protected void onPostExecute(ResultSet results) {
+                super.onPostExecute(results);
+                Estacoes estacoes = new Estacoes();
+
+
+                while (results.hasNext()) {
+                    QuerySolution solution = results.nextSolution();
+                    String lat = solution.get("lat").toString().replace("http://example.com/", "");
+                    estacoes.setLat(Double.valueOf(lat));
+                    String lgt = solution.get("long").toString().replace("http://example.com/", "");
+                    estacoes.setLgt(Double.valueOf(lgt));
+                    String end = solution.get("end").toString().replace("http://example.com/", "");
+                    estacoes.setEndereco(end);
+                    String est = solution.get("est").toString().replace("http://example.com/", "");
+                    estacoes.setEst(est);
+                    ListaEstacoes.add(estacoes);
+                    Log.info("onPosExecuteMapa", "adcionando");
+                }
+                marcarMapa();
+                Log.info("onPosExecuteMapa", "lista criada");
+
+            }
         }
-    }
+
 }
