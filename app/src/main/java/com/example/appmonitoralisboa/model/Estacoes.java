@@ -5,12 +5,13 @@ public class Estacoes {
     private double lgt;
     private String endereco;
     private String est;
-    private String temperatura="";
-    private String umidade="";
-    private String vento="";
-    private String pm10="";
-    private String pm25="";
-    private String no2="";
+    private String temperatura="-";
+    private String umidade="-";
+    private String vento="-";
+    private String pm10="-";
+    private String pm25="-";
+    private String no2="-";
+    private String contVeiculos="-";
     public String getVento() {
         return vento;
     }
@@ -69,7 +70,7 @@ public class Estacoes {
         this.contVeiculos = contVeiculos;
     }
 
-    private String contVeiculos;
+
 
     public double getLat() {
         return lat;
