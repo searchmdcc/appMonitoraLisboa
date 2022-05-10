@@ -1,4 +1,6 @@
 package com.example.appmonitoralisboa.RulesNofication;
+import static android.app.PendingIntent.FLAG_IMMUTABLE;
+
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -10,13 +12,13 @@ import androidx.core.app.NotificationCompat;
 
 import com.example.appmonitoralisboa.R;
 
-public class Notification {
+public class Notificacao {
     private NotificationManager mNotificationManager;
 
     public void pushNotification(Context context, String title, String message){ NotificationCompat.Builder mBuilder =
     new NotificationCompat.Builder(context.getApplicationContext(), "notify_001");
     Intent ii = new Intent(context.getApplicationContext(), MainActivity.class);
-    PendingIntent pendingIntent = PendingIntent.getActivity(context, 0, ii, 0);
+    PendingIntent pendingIntent = PendingIntent.getActivity(context, 0, ii, PendingIntent.FLAG_MUTABLE);
 
     NotificationCompat.BigTextStyle bigText = new NotificationCompat.BigTextStyle();
     bigText.bigText(message);

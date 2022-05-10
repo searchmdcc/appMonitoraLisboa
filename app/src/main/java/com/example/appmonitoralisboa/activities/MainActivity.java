@@ -12,7 +12,8 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.example.appmonitoralisboa.R;
-import com.example.appmonitoralisboa.model.Tempo;
+import com.example.appmonitoralisboa.model.*;
+import com.example.appmonitoralisboa.RulesNofication.RuleEventos;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryExecution;
 import com.hp.hpl.jena.query.QueryExecutionFactory;
@@ -30,7 +31,7 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
     private TextView temperatura, umidade, vento;
     private Button atualizar, buscarLocal, qualidadeAr, notificacao;
-
+    private DataSensors dados = new DataSensors();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -44,6 +45,11 @@ public class MainActivity extends AppCompatActivity {
         qualidadeAr = findViewById(R.id.btnQualidadeAr);
         notificacao = findViewById(R.id.btnNotificacoes);
 
+        //dados.setNo2(450);
+        //dados.setTemperatura(38);
+
+        RuleEventos re  = new RuleEventos();
+        re.verificarEventos(dados, getApplicationContext());
         atualizar.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -112,7 +118,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(ResultSet results) {
             super.onPostExecute(results);
-            Tempo t = new Tempo();
+            DataSensors t = new DataSensors();
             Log.info("onPosExecute", "onPos");
             while (results.hasNext()) {
                 QuerySolution solution = results.nextSolution();
