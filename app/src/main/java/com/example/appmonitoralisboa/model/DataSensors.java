@@ -1,13 +1,30 @@
 package com.example.appmonitoralisboa.model;
 
 public class DataSensors {
-    private String temperatura="-";
-    private String umidade="-";
-    private String vento="-";
-    private String pm10="-";
-    private String pm25="-";
-    private String no2="-";
-    private String contVeiculos="-";
+    private String temperatura = "-";
+    private String umidade = "-";
+    private String vento = "-";
+    private String pm10 = "-";
+    private String pm25 = "-";
+    private String no2 = "-";
+    private String o3 = "-";
+    private String So2 = "-";
+
+    public String getO3() {
+        return o3;
+    }
+
+    public void setO3(String o3) {
+        this.o3 = o3;
+    }
+
+    public String getSo2() {
+        return So2;
+    }
+
+    public void setSo2(String so2) {
+        So2 = so2;
+    }
 
     public String getTemperatura() {
         return temperatura;
@@ -57,11 +74,4 @@ public class DataSensors {
         this.no2 = no2;
     }
 
-    public String getContVeiculos() {
-        return contVeiculos;
-    }
-
-    public void setContVeiculos(String contVeiculos) {
-        this.contVeiculos = contVeiculos;
-    }
 }

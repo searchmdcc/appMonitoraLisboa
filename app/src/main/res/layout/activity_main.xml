@@ -19,7 +19,7 @@
         android:layout_height="wrap_content"
         android:text="Data:"
         android:textAlignment="center"
-        android:textSize="16sp" />
+        android:textSize="20sp" />
 
     <TextView
         android:id="@+id/txtInformes"
@@ -45,7 +45,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Temperatura: 25ºC "
-            android:textSize="16sp" />
+            android:textSize="20sp" />
 
         <TextView
             android:id="@+id/txtUmidade"
@@ -53,7 +53,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Umidade: 65% "
-            android:textSize="16sp" />
+            android:textSize="20sp" />
 
         <TextView
             android:id="@+id/txtVento"
@@ -61,7 +61,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Vento: 60 km/h"
-            android:textSize="16sp" />
+            android:textSize="20sp" />
     </LinearLayout>
 
     <Button
@@ -79,7 +79,7 @@
         android:layout_height="wrap_content"
         android:text="Outras Informações"
         android:textAlignment="center"
-        android:textSize="20sp" />
+        android:textSize="24sp" />
 
     <Button
         android:id="@+id/btnBuscaLocal"
@@ -95,10 +95,4 @@
         android:text="Qualidade do Ar"
         android:textSize="16sp" />
 
-    <Button
-        android:id="@+id/btnNotificacoes"
-        android:layout_width="match_parent"
-        android:layout_height="72dp"
-        android:text="Notificações"
-        android:textSize="16sp" />
 </LinearLayout>

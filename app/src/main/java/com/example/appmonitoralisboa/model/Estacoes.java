@@ -5,7 +5,7 @@ public class Estacoes {
     private double lgt;
     private String endereco;
     private String est;
-    private DataSensors dados;
+    private DataSensors dados=new DataSensors();
 
     public DataSensors getDados() {
         return dados;

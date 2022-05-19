@@ -23,33 +23,38 @@ import com.hp.hpl.jena.query.ResultSet;
 
 import org.openjena.atlas.logging.Log;
 
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
-    private TextView temperatura, umidade, vento;
-    private Button atualizar, buscarLocal, qualidadeAr, notificacao;
+    private TextView temperatura, umidade, vento, data;
+    private Button atualizar, buscarLocal, qualidadeAr;
     private DataSensors dados = new DataSensors();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         temperatura = findViewById(R.id.txtTemperatura);
         umidade = findViewById(R.id.txtUmidade);
         vento = findViewById(R.id.txtVento);
+        data=findViewById(R.id.txtData);
         //buttons
         atualizar = findViewById(R.id.btnAtualizar);
         buscarLocal = findViewById(R.id.btnBuscaLocal);
         qualidadeAr = findViewById(R.id.btnQualidadeAr);
-        notificacao = findViewById(R.id.btnNotificacoes);
 
-        //dados.setNo2(450);
-        //dados.setTemperatura(38);
+        SimpleDateFormat formataData = new SimpleDateFormat("dd-MM-yyyy HH:MM");
+        Date d = new Date();
+        String dataFormatada = formataData.format(d);
+        data.setText("Data: " + dataFormatada);
+        inicializarDados id = new inicializarDados();
+        id.execute();
 
-        RuleEventos re  = new RuleEventos();
-        re.verificarEventos(dados, getApplicationContext());
         atualizar.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -74,68 +79,57 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-
     class ProcessarDados extends AsyncTask<Void, Void, ResultSet>{
-//fuseki não suporta agregação avg criar iot-stream e consultá-lo
         @Override
         protected ResultSet doInBackground(Void... voids) {
-            String consulta = "PREFIX sosa: <http://www.w3.org/ns/sosa/>\n" +
-                    "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns/>\n" +
-                    "PREFIX ssn: <http://www.w3.org/ns/ssn/>\n" +
+            String consulta = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
+                    "PREFIX sosa: <http://www.w3.org/ns/sosa/>\n" +
+                    "PREFIX iots: <http://purl.org/iot/ontology/iot-stream#>\n" +
                     "PREFIX ex: <http://example.com/>\n" +
-                    "select avg(?resTemp) as ?avgTemperatura avg(?resUmid) as ?avgUmidade avg(?resVent) as ?avgVento where{\n" +
-                    "{\n" +
-                    "?temp sosa:madeBySensor ?sensTemp;\n" +
-                    "sosa:hasSimpleResult ?resTemp;\n" +
-                    "sosa:hasResultTime ?rtTemp;\n" +
-                    "BIND (str(?sensTemp) AS ?strTemp)\n" +
-                    "filter(regex(?strTemp, \"SensorTemperatura\"))\n" +
-                    "filter (?rtTemp in(\"202108301200\"))\n" +
-                    " }\n" +
-                    " {\n" +
-                    "?umid sosa:madeBySensor ?sensUmid;\n" +
-                    "sosa:hasSimpleResult ?resUmid;\n" +
-                    "sosa:hasResultTime ?rtUmid;\n" +
-                    "BIND (str(?sensUmid) AS ?strUmid)\n" +
-                    "filter(regex(?strUmid, \"SensorUmidade\"))\n" +
-                    "filter (?rtUmid in(\"202108301200\"))\n" +
-                    "  }\n" +
-                    " {\n" +
-                    "?vent sosa:madeBySensor ?sensVent;\n" +
-                    "sosa:hasSimpleResult ?resVent;\n" +
-                    "sosa:hasResultTime ?rtVent;\n" +
-                    "BIND (str(?sensVent) AS ?strVent)\n" +
-                    "filter(regex(?strVent, \"Vento\"))\n" +
-                    "filter (?rtVent in(\"202108301200\"))\n" +
-                    "  }\n" +
-                    "}limit 1";
+                    "select ?temp ?vent ?umid where { \n" +
+                    "\t?t rdf:type iots:StreamObservation;\n" +
+                    "\t    \tsosa:hasSimpleResult ?temp;\n" +
+                    "     \tsosa:hasResultTime 202205101100;\n" +
+                    "            \tiots:belongsTo ?iot.\n" +
+                    "    ?iot iots:analyzedBy ?analytics.\n" +
+                    "    ?analytics ex:sensorType \"Temperatura\".\n" +
+                    "    \n" +
+                    "    ?v rdf:type iots:StreamObservation;\n" +
+                    "\t    \tsosa:hasSimpleResult ?vent;\n" +
+                    "     \tsosa:hasResultTime 202205101100;\n" +
+                    "            \tiots:belongsTo ?iotV.\n" +
+                    "    ?iotV iots:analyzedBy ?analyticsV.\n" +
+                    "    ?analyticsV ex:sensorType \"Intensidade_do_vento\".\n" +
+                    "    \n" +
+                    "        ?u rdf:type iots:StreamObservation;\n" +
+                    "\t    \tsosa:hasSimpleResult ?umid;\n" +
+                    "     \tsosa:hasResultTime 202205101100;\n" +
+                    "            \tiots:belongsTo ?iotU.\n" +
+                    "    ?iotU iots:analyzedBy ?analyticsU.\n" +
+                    "    ?analyticsU ex:sensorType \"Umidade_relativa\".\n" +
+                    "\n" +
+                    "} ";
             Query query = QueryFactory.create(consulta);
-            QueryExecution qexec = QueryExecutionFactory.createServiceRequest("http://172.18.0.1:3030/Observations/query", query);
+            QueryExecution qexec = QueryExecutionFactory.createServiceRequest("http://172.18.0.1:3030/IoTStream/query", query);
             ResultSet results = qexec.execSelect();
             return results;
         }
-
         @Override
         protected void onPostExecute(ResultSet results) {
             super.onPostExecute(results);
-            DataSensors t = new DataSensors();
-            Log.info("onPosExecute", "onPos");
             while (results.hasNext()) {
                 QuerySolution solution = results.nextSolution();
-                String avgTemp = solution.getLiteral("avgTemperatura").getString();
-                String avgUmid = solution.getLiteral("avgUmidade").getString();
-                String avgVento = solution.getLiteral("avgVento").getString();
-                t.setTemperatura(avgTemp);
-                t.setUmidade(avgUmid);
-                t.setVento(avgVento);
+                dados.setTemperatura(new DecimalFormat("#,##0.00").format(solution.getLiteral("temp").getDouble()));
+                dados.setUmidade(new DecimalFormat("#,##0.00").format(solution.getLiteral("umid").getDouble()));
+                dados.setVento(new DecimalFormat("#,##0.00").format(solution.getLiteral("vent").getDouble()));
             }
             //hora do sistema
             /*SimpleDateFormat formataData = new SimpleDateFormat("dd-MM-yyyy HH:mm");
             Date data = new Date();
             String dataFormatada = formataData.format(data);*/
-            temperatura.setText("Temperatura: "+t.getTemperatura()+"ºC");
-            umidade.setText("Umidade: "+t.getUmidade()+"%");
-            vento.setText("Vento: "+t.getVento()+"Km/h");
+            temperatura.setText("Temperatura: "+dados.getTemperatura()+"ºC");
+            umidade.setText("Umidade: "+dados.getUmidade()+"%");
+            vento.setText("Vento: "+dados.getVento()+"Km/h");
 
            // umidade.setText(dataFormatada);
 
@@ -143,9 +137,103 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    class inicializarDados extends AsyncTask<Void, Void, ResultSet>{
+        @Override
+        protected ResultSet doInBackground(Void... voids) {
+            String consulta = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
+                    "PREFIX sosa: <http://www.w3.org/ns/sosa/>\n" +
+                    "PREFIX iots: <http://purl.org/iot/ontology/iot-stream#>\n" +
+                    "PREFIX ex: <http://example.com/>\n" +
+                    "select ?temp ?vent ?umid ?pm10 ?pm25 ?no2 ?so2 ?o3 where { \n" +
+                    "\t?t rdf:type iots:StreamObservation;\n" +
+                    "\t    \tsosa:hasSimpleResult ?temp;\n" +
+                    "     \tsosa:hasResultTime 202205101100;\n" +
+                    "            \tiots:belongsTo ?iot.\n" +
+                    "    ?iot iots:analyzedBy ?analytics.\n" +
+                    "    ?analytics ex:sensorType \"Temperatura\".\n" +
+                    "    \n" +
+                    "    ?v rdf:type iots:StreamObservation;\n" +
+                    "\t    \tsosa:hasSimpleResult ?vent;\n" +
+                    "     \tsosa:hasResultTime 202205101100;\n" +
+                    "            \tiots:belongsTo ?iotV.\n" +
+                    "    ?iotV iots:analyzedBy ?analyticsV.\n" +
+                    "    ?analyticsV ex:sensorType \"Intensidade_do_vento\".\n" +
+                    "    \n" +
+                    "        ?u rdf:type iots:StreamObservation;\n" +
+                    "\t    \tsosa:hasSimpleResult ?umid;\n" +
+                    "     \tsosa:hasResultTime 202205101100;\n" +
+                    "            \tiots:belongsTo ?iotU.\n" +
+                    "    ?iotU iots:analyzedBy ?analyticsU.\n" +
+                    "    ?analyticsU ex:sensorType \"Umidade_relativa\".\n" +
+                    "?obs1 rdf:type iots:StreamObservation;\n" +
+                    "\t    \tsosa:hasSimpleResult ?pm10;\n" +
+                    "     \tsosa:hasResultTime 202205101100;\n" +
+                    "            \tiots:belongsTo ?iotPm10.\n" +
+                    "    ?iotPm10 iots:analyzedBy ?analyticsPm10.\n" +
+                    "    ?analyticsPm10 ex:sensorType \"PM10\".\n" +
+                    "    \n" +
+                    "    ?obs2 rdf:type iots:StreamObservation;\n" +
+                    "\t    \tsosa:hasSimpleResult ?pm25;\n" +
+                    "     \tsosa:hasResultTime 202205101100;\n" +
+                    "            \tiots:belongsTo ?iotPm25.\n" +
+                    "    ?iotPm25 iots:analyzedBy ?analyticsPm25.\n" +
+                    "    ?analyticsPm25 ex:sensorType \"PM25\".\n" +
+                    "    \n" +
+                    "    ?obs3 rdf:type iots:StreamObservation;\n" +
+                    "\t    \tsosa:hasSimpleResult ?o3;\n" +
+                    "     \tsosa:hasResultTime 202205101100;\n" +
+                    "            \tiots:belongsTo ?iotO3.\n" +
+                    "    ?iotO3 iots:analyzedBy ?analyticsO3.\n" +
+                    "    ?analyticsO3 ex:sensorType \"O3\".\n" +
+                    "    \n" +
+                    " ?obs4 rdf:type iots:StreamObservation;\n" +
+                    "\t    \tsosa:hasSimpleResult ?no2;\n" +
+                    "     \tsosa:hasResultTime 202205101100;\n" +
+                    "            \tiots:belongsTo ?iotNo2.\n" +
+                    "    ?iotNo2 iots:analyzedBy ?analyticsNo2.\n" +
+                    "    ?analyticsNo2 ex:sensorType \"NO2\".\n" +
+                    "  \n" +
+                    "?obs5 rdf:type iots:StreamObservation;\n" +
+                    "\t    \tsosa:hasSimpleResult ?so2;\n" +
+                    "     \tsosa:hasResultTime 202205101100;\n" +
+                    "            \tiots:belongsTo ?iotSo2.\n" +
+                    "    ?iotSo2 iots:analyzedBy ?analyticsSo2.\n" +
+                    "    ?analyticsSo2 ex:sensorType \"SO2\".\n" +
+                    "}  \n";
+            Query query = QueryFactory.create(consulta);
+            QueryExecution qexec = QueryExecutionFactory.createServiceRequest("http://172.18.0.1:3030/IoTStream/query", query);
+            ResultSet results = qexec.execSelect();
+            return results;
+        }
 
+        @Override
+        protected void onPostExecute(ResultSet results) {
+            super.onPostExecute(results);
+            while (results.hasNext()) {
+                QuerySolution solution = results.nextSolution();
+                dados.setTemperatura(new DecimalFormat("#,##0.00").format(solution.getLiteral("temp").getDouble()));
+                dados.setUmidade(new DecimalFormat("#,##0.00").format(solution.getLiteral("umid").getDouble()));
+                dados.setVento(new DecimalFormat("#,##0.00").format(solution.getLiteral("vent").getDouble()));
+                dados.setPm10(new DecimalFormat("#,##0.00").format(solution.getLiteral("pm10").getDouble()));
+                dados.setPm25(new DecimalFormat("#,##0.00").format(solution.getLiteral("pm25").getDouble()));
+                dados.setNo2(new DecimalFormat("#,##0.00").format(solution.getLiteral("no2").getDouble()));
+                dados.setO3(new DecimalFormat("#,##0.00").format(solution.getLiteral("o3").getDouble()));
+                dados.setSo2(new DecimalFormat("#,##0.00").format(solution.getLiteral("so2").getDouble()));
+            }
 
+            temperatura.setText("Temperatura: "+dados.getTemperatura()+"ºC");
+            umidade.setText("Umidade: "+dados.getUmidade()+"%");
+            vento.setText("Vento: "+dados.getVento()+"Km/h");
+           // dados.setTemperatura("40");
+            RuleEventos re  = new RuleEventos();
+            re.verificarEventos(dados, getApplicationContext());
 
+            }
     }
+
+
+
+
+}
 
 

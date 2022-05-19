@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "967090066868",
+    "firebase_url": "https://monitoraapp-348719-default-rtdb.firebaseio.com",
+    "project_id": "monitoraapp-348719",
+    "storage_bucket": "monitoraapp-348719.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:967090066868:android:e1c84423b1f93ebad9cee1",
+        "android_client_info": {
+          "package_name": "com.example.appmonitoralisboa"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "967090066868-a11gcrrdscvtmd1c6c2udeag92fhefbn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA4qP_uKwNgth1GfIbS1i9iKvb1-i8qygo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "967090066868-a11gcrrdscvtmd1c6c2udeag92fhefbn.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

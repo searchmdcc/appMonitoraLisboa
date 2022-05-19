@@ -14,7 +14,6 @@ import com.example.appmonitoralisboa.R;
 
 public class Notificacao {
     private NotificationManager mNotificationManager;
-
     public void pushNotification(Context context, String title, String message){ NotificationCompat.Builder mBuilder =
     new NotificationCompat.Builder(context.getApplicationContext(), "notify_001");
     Intent ii = new Intent(context.getApplicationContext(), MainActivity.class);
@@ -35,9 +34,9 @@ public class Notificacao {
     mNotificationManager =(NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        String channelId = "Your_channel_id";
+        String channelId = "notify_001";
         NotificationChannel channel = new NotificationChannel(channelId,
-                        "Channel human readable title",
+                        "notify",
                         NotificationManager.IMPORTANCE_HIGH);
         mNotificationManager.createNotificationChannel(channel);
         mBuilder.setChannelId(channelId);

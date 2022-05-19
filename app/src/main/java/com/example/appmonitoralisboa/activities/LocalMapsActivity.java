@@ -44,28 +44,24 @@ import java.util.List;
 
 
 public class LocalMapsActivity extends FragmentActivity implements OnMapReadyCallback {
-
     private GoogleMap mMap;
     private ActivityLocalMapsBinding binding;
     private ArrayList<Estacoes> ListaEstacoes = new ArrayList<Estacoes>();
     private Estacoes estacao1, estacao2, estacao3, estacao4, estacao5, estacao6,
-            estacao7, estacao8, estacao9, estacao10, estacao11, estacao12, estacao13;
-
+            estacao7, estacao8, estacao9, estacao10, estacao11, estacao12;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         binding = ActivityLocalMapsBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
-
-        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
         estacao1=new Estacoes();estacao2=new Estacoes();estacao3=new Estacoes();estacao4=new Estacoes();
         estacao5=new Estacoes();estacao6=new Estacoes();estacao7=new Estacoes();estacao8=new Estacoes();
         estacao9=new Estacoes();estacao10=new Estacoes();estacao11=new Estacoes();estacao12=new Estacoes();
-        estacao13=new Estacoes();
+
         ProcessarMetadados pm = new ProcessarMetadados();
         pm.execute();
         ProcessarObservacoes po = new ProcessarObservacoes();
@@ -74,18 +70,15 @@ public class LocalMapsActivity extends FragmentActivity implements OnMapReadyCal
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
-        Log.info("testando carregamento mapa", "Mapa sendo carregado..marcadores");
         mMap = googleMap;
-
     }
 
     public void marcarMapa() {
-
         if (ListaEstacoes != null) {
             LatLng coordenadas = null;
             for (int i = 0; i < ListaEstacoes.size(); i++) {
-                Log.info("onPosExecuteMapa", "colocando marcações");
                 coordenadas = new LatLng(ListaEstacoes.get(i).getLat(), ListaEstacoes.get(i).getLgt());
+                Log.info("Temperatura", ListaEstacoes.get(i).getDados().getTemperatura());
                 mMap.addMarker(new MarkerOptions().position(coordenadas).title("Estação " + ListaEstacoes.get(i).getEst()))
                         .setSnippet("Rua: " + ListaEstacoes.get(i).getEndereco()+
                                 "\nTemperatura: "+ListaEstacoes.get(i).getDados().getTemperatura()+
@@ -94,9 +87,8 @@ public class LocalMapsActivity extends FragmentActivity implements OnMapReadyCal
                         "\nPM10: "+ListaEstacoes.get(i).getDados().getPm10()+
                         "\nPM25: "+ListaEstacoes.get(i).getDados().getPm25()+
                         "\nNO2: "+ListaEstacoes.get(i).getDados().getNo2()+
-                        "\nQuantidade de veículos:" +ListaEstacoes.get(i).getDados().getContVeiculos());
-
-
+                        "\nSO2: "+ ListaEstacoes.get(i).getDados().getSo2()+
+                        "\nO3: "+ListaEstacoes.get(i).getDados().getO3());
             }
             mMap.moveCamera(CameraUpdateFactory.newLatLng(coordenadas));
             mMap.animateCamera(CameraUpdateFactory.zoomTo(12));
@@ -109,25 +101,19 @@ public class LocalMapsActivity extends FragmentActivity implements OnMapReadyCal
 
                 @Override
                 public View getInfoContents(Marker marker) {
-
-                    Context context = getApplicationContext(); //or getActivity(), YourActivity.this, etc.
-
+                    Context context = getApplicationContext();
                     LinearLayout info = new LinearLayout(context);
                     info.setOrientation(LinearLayout.VERTICAL);
-
                     TextView title = new TextView(context);
                     title.setTextColor(Color.BLACK);
                     title.setGravity(Gravity.CENTER);
                     title.setTypeface(null, Typeface.BOLD);
                     title.setText(marker.getTitle());
-
                     TextView snippet = new TextView(context);
                     snippet.setTextColor(Color.GRAY);
                     snippet.setText(marker.getSnippet());
-
                     info.addView(title);
                     info.addView(snippet);
-
                     return info;
                 }
             });
@@ -135,541 +121,515 @@ public class LocalMapsActivity extends FragmentActivity implements OnMapReadyCal
     }
 
     class ProcessarMetadados extends AsyncTask<Void, Void, ResultSet> {
-            //fuseki não suporta agregação avg criar iot-stream e consultá-lo
             @Override
             protected ResultSet doInBackground(Void... voids) {
-                String consulta = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns/>\n" +
-                        "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema/>\n" +
+                String consulta = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
+                        "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n" +
+                        "PREFIX owl: <http://www.w3.org/2002/07/owl#>\n" +
                         "PREFIX sosa: <http://www.w3.org/ns/sosa/>\n" +
-                        "PREFIX ssn: <http://www.w3.org/ns/ssn/>\n" +
-                        "PREFIX ex: <http://example.com/>\n" +
-                        "PREFIX owl: <http://www.w3.org/2002/07/owl/>\n" +
-                        "PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos/>\n" +
+                        "prefix ex: <http://example.com/>\n" +
+                        "prefix geo:<http://www.w3.org/2003/01/geo/wgs84_pos/>\n" +
                         "select distinct ?est ?end ?lat ?long where{\n" +
-                        "    ?sensor rdf:type ssn:Sensor;\n" +
-                        "    \t\tex:belongsStation ?estacao.\n" +
-                        "    ?estacao rdfs:label ?est;\n" +
-                        "    \t owl:sameAs ?est2.\n" +
-                        "    ?est2 ex:hasAddress ?ender.\n" +
-                        "    ?ender rdfs:label ?end;\n" +
-                        "           geo:location ?ponto.\n" +
-                        "     ?ponto geo:lat ?lat;\n" +
-                        "            geo:long ?long.\n" +
-                        "    \n" +
-                        "  }";
+                        " ?sensor rdf:type sosa:Sensor;\n" +
+                        "\t\tex:belongsStation ?estacao.\n" +
+                        " ?estacao rdfs:label ?est;\n" +
+                        "\t\towl:sameAs ?est2.\n" +
+                        "?est2 ex:hasAddress ?ender.\n" +
+                        "?ender rdfs:label ?end;\n" +
+                        "\t  geo:location ?ponto.\n" +
+                        "?ponto geo:lat ?lat;\n" +
+                        "\t   geo:long ?long.\n" +
+                        "\n" +
+                        "}limit 13";
                 Query query = QueryFactory.create(consulta);
-                QueryExecution qexec = QueryExecutionFactory.createServiceRequest("http://172.18.0.1:3030/MetadataSensors/query", query);
+                QueryExecution qexec = QueryExecutionFactory.createServiceRequest("http://172.18.0.1:3030/Metadata_sensor/query", query);
                 ResultSet results = qexec.execSelect();
                 return results;
             }
-
             @Override
             protected void onPostExecute(ResultSet results) {
                 super.onPostExecute(results);
-                 Log.info("Conferindo dados", "resultSet");
-                while (results.hasNext()) {
+                  while (results.hasNext()) {
                     QuerySolution solution = results.nextSolution();
                     String numEst = solution.get("est").toString().replace("http://example.com/", "");
-                    Log.info("valor estacao", numEst);
                     if(numEst.equals("1")){
-                        Log.info("Metadado 1", numEst);
-                        String lat = solution.get("lat").toString().replace("http://example.com/", "");
+                           String lat = solution.get("lat").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "");
                         estacao1.setLat(Double.valueOf(lat));
-                        String lgt = solution.get("long").toString().replace("http://example.com/", "");
+                        String lgt = solution.get("long").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "");
                         estacao1.setLgt(Double.valueOf(lgt));
                         String end = solution.get("end").toString().replace("http://example.com/", "");
                         estacao1.setEndereco(end);
                         String est = solution.get("est").toString().replace("http://example.com/", "");
                         estacao1.setEst(est);
                     }else if(numEst.equals("2")){
-                        Log.info("Metadado 2", numEst);
-                        String lat = solution.get("lat").toString().replace("http://example.com/", "");
+                        String lat = solution.get("lat").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "");
                         estacao2.setLat(Double.valueOf(lat));
-                        String lgt = solution.get("long").toString().replace("http://example.com/", "");
+                        String lgt = solution.get("long").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "");
                         estacao2.setLgt(Double.valueOf(lgt));
                         String end = solution.get("end").toString().replace("http://example.com/", "");
                         estacao2.setEndereco(end);
                         String est = solution.get("est").toString().replace("http://example.com/", "");
                         estacao2.setEst(est);
-
                     }else if(numEst.equals("3")){
-                        String lat = solution.get("lat").toString().replace("http://example.com/", "");
+                        String lat = solution.get("lat").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "");
                         estacao3.setLat(Double.valueOf(lat));
-                        String lgt = solution.get("long").toString().replace("http://example.com/", "");
+                        String lgt = solution.get("long").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "");
                         estacao3.setLgt(Double.valueOf(lgt));
                         String end = solution.get("end").toString().replace("http://example.com/", "");
                         estacao3.setEndereco(end);
                         String est = solution.get("est").toString().replace("http://example.com/", "");
                         estacao3.setEst(est);
                     }else if(numEst.equals("4")){
-                        String lat = solution.get("lat").toString().replace("http://example.com/", "");
+                        String lat = solution.get("lat").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "");
                         estacao4.setLat(Double.valueOf(lat));
-                        String lgt = solution.get("long").toString().replace("http://example.com/", "");
+                        String lgt = solution.get("long").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "");
                         estacao4.setLgt(Double.valueOf(lgt));
                         String end = solution.get("end").toString().replace("http://example.com/", "");
                         estacao4.setEndereco(end);
                         String est = solution.get("est").toString().replace("http://example.com/", "");
                         estacao4.setEst(est);
                     }else if(numEst.equals("5")){
-                        String lat = solution.get("lat").toString().replace("http://example.com/", "");
+                        String lat = solution.get("lat").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "");
                         estacao5.setLat(Double.valueOf(lat));
-                        String lgt = solution.get("long").toString().replace("http://example.com/", "");
+                        String lgt = solution.get("long").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "");
                         estacao5.setLgt(Double.valueOf(lgt));
                         String end = solution.get("end").toString().replace("http://example.com/", "");
                         estacao5.setEndereco(end);
                         String est = solution.get("est").toString().replace("http://example.com/", "");
                         estacao5.setEst(est);
                     }else if(numEst.equals("6")){
-                        String lat = solution.get("lat").toString().replace("http://example.com/", "");
+                        Log.info("Metadado 6", numEst);
+                        String lat = solution.get("lat").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "");
                         estacao6.setLat(Double.valueOf(lat));
-                        String lgt = solution.get("long").toString().replace("http://example.com/", "");
+                        String lgt = solution.get("long").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "");
                         estacao6.setLgt(Double.valueOf(lgt));
                         String end = solution.get("end").toString().replace("http://example.com/", "");
                         estacao6.setEndereco(end);
                         String est = solution.get("est").toString().replace("http://example.com/", "");
                         estacao6.setEst(est);
                     }else if(numEst.equals("7")){
-                        String lat = solution.get("lat").toString().replace("http://example.com/", "");
+                        String lat = solution.get("lat").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "");
                         estacao7.setLat(Double.valueOf(lat));
-                        String lgt = solution.get("long").toString().replace("http://example.com/", "");
+                        String lgt = solution.get("long").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "");
                         estacao7.setLgt(Double.valueOf(lgt));
                         String end = solution.get("end").toString().replace("http://example.com/", "");
                         estacao7.setEndereco(end);
                         String est = solution.get("est").toString().replace("http://example.com/", "");
                         estacao7.setEst(est);
                     }else if(numEst.equals("8")){
-                        String lat = solution.get("lat").toString().replace("http://example.com/", "");
+                        String lat = solution.get("lat").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "");
                         estacao8.setLat(Double.valueOf(lat));
-                        String lgt = solution.get("long").toString().replace("http://example.com/", "");
+                        String lgt = solution.get("long").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "");
                         estacao8.setLgt(Double.valueOf(lgt));
                         String end = solution.get("end").toString().replace("http://example.com/", "");
                         estacao8.setEndereco(end);
                         String est = solution.get("est").toString().replace("http://example.com/", "");
                         estacao8.setEst(est);
                     }else if(numEst.equals("9")){
-                        String lat = solution.get("lat").toString().replace("http://example.com/", "");
+                        String lat = solution.get("lat").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "");
                         estacao9.setLat(Double.valueOf(lat));
-                        String lgt = solution.get("long").toString().replace("http://example.com/", "");
+                        String lgt = solution.get("long").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "");
                         estacao9.setLgt(Double.valueOf(lgt));
                         String end = solution.get("end").toString().replace("http://example.com/", "");
                         estacao9.setEndereco(end);
                         String est = solution.get("est").toString().replace("http://example.com/", "");
                         estacao9.setEst(est);
                     }else if(numEst.equals("10")){
-                        String lat = solution.get("lat").toString().replace("http://example.com/", "");
+                        String lat = solution.get("lat").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "");
                         estacao10.setLat(Double.valueOf(lat));
-                        String lgt = solution.get("long").toString().replace("http://example.com/", "");
+                        String lgt = solution.get("long").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "");
                         estacao10.setLgt(Double.valueOf(lgt));
                         String end = solution.get("end").toString().replace("http://example.com/", "");
                         estacao10.setEndereco(end);
                         String est = solution.get("est").toString().replace("http://example.com/", "");
                         estacao10.setEst(est);
-                    }else if(numEst.equals("50")){
-                        String lat = solution.get("lat").toString().replace("http://example.com/", "");
+                     }else if(numEst.equals("11")){
+                        String lat = solution.get("lat").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "");
                         estacao11.setLat(Double.valueOf(lat));
-                        String lgt = solution.get("long").toString().replace("http://example.com/", "");
+                        String lgt = solution.get("long").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "");
                         estacao11.setLgt(Double.valueOf(lgt));
                         String end = solution.get("end").toString().replace("http://example.com/", "");
                         estacao11.setEndereco(end);
                         String est = solution.get("est").toString().replace("http://example.com/", "");
                         estacao11.setEst(est);
-                    }else if(numEst.equals("1027")){
-                        String lat = solution.get("lat").toString().replace("http://example.com/", "");
+                    }else if(numEst.equals("12")){
+                        String lat = solution.get("lat").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "");
                         estacao12.setLat(Double.valueOf(lat));
-                        String lgt = solution.get("long").toString().replace("http://example.com/", "");
+                        String lgt = solution.get("long").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "");
                         estacao12.setLgt(Double.valueOf(lgt));
                         String end = solution.get("end").toString().replace("http://example.com/", "");
                         estacao12.setEndereco(end);
                         String est = solution.get("est").toString().replace("http://example.com/", "");
                         estacao12.setEst(est);
-                    }else if(numEst.equals("1079")){
-                        String lat = solution.get("lat").toString().replace("http://example.com/", "");
-                        estacao13.setLat(Double.valueOf(lat));
-                        String lgt = solution.get("long").toString().replace("http://example.com/", "");
-                        estacao13.setLgt(Double.valueOf(lgt));
-                        String end = solution.get("end").toString().replace("http://example.com/", "");
-                        estacao13.setEndereco(end);
-                        String est = solution.get("est").toString().replace("http://example.com/", "");
-                        estacao13.setEst(est);
-
                     }
-
-                    Log.info("onPosExecuteMapa", "adcionandoMetadados");
                 }
-                Log.info("onPosExecuteMapa", "lista metadados criada");
             }
         }
 
     class ProcessarObservacoes extends AsyncTask<Void, Void, ResultSet> {
-        //fuseki não suporta agregação avg criar iot-stream e consultá-lo
         @Override
         protected ResultSet doInBackground(Void... voids) {
-            String consulta = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns/>\n" +
-                    "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema/>\n" +
+            String consulta ="PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
                     "PREFIX sosa: <http://www.w3.org/ns/sosa/>\n" +
-                    "PREFIX ssn: <http://www.w3.org/ns/ssn/>\n" +
-                    "PREFIX ex: <http://example.com/>\n" +
-                    "PREFIX owl: <http://www.w3.org/2002/07/owl/>\n" +
-                    "PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos/>\n" +
-                    "\n" +
-                    "select ?result ?sensor where{\n" +
-                    "\t?observ rdf:type sosa:Observation;\n" +
-                    "    \t    sosa:hasSimpleResult ?result;\n" +
-                    "            sosa:hasResultTime \"202108201000\";\n" +
-                    "            sosa:madeBySensor ?sensor.\n" +
-                    "      \n" +
-                    "  \n" +
-                    "    \n" +
-                    "  }";
+                    "select ?result ?sensor where{ \n" +
+                    "?obs rdf:type sosa:Observation;\n" +
+                    "      sosa:hasSimpleResult ?result;\n" +
+                    "      sosa:hasResultTime 202205101100;\n" +
+                    "      sosa:madeBySensor ?sensor.\n" +
+                    "} ";
             Query query = QueryFactory.create(consulta);
-            QueryExecution qexec = QueryExecutionFactory.createServiceRequest("http://172.18.0.1:3030/Observations/query", query);
+            QueryExecution qexec = QueryExecutionFactory.createServiceRequest("http://172.18.0.1:3030/Observation_sensor/query", query);
             ResultSet results = qexec.execSelect();
             return results;
         }
-
         @Override
         protected void onPostExecute(ResultSet results) {
             super.onPostExecute(results);
             while (results.hasNext()) {
                 QuerySolution solution = results.nextSolution();
                 String sensor = solution.get("sensor").toString().replace("http://example.com/", "");
-                if(sensor.contains("_1") && !sensor.contains("_10") ){
-                    DataSensors dados = new DataSensors();
-                    Log.info("tipo 1",sensor);
-                    if(sensor.contains("Temperatura")){
+                if(sensor.contains("TEMP0001") || sensor.contains("HR0001") || sensor.contains("VI0001") || sensor.contains("PM100001") || sensor.contains("PM250001") ||
+                        sensor.contains("SO20001") || sensor.contains("NO20001") || sensor.contains("O30001")){
+                    if(sensor.contains("TEMP")){
                         String temp = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"ºC";
-                        dados.setTemperatura(temp);
-                    }else if(sensor.contains("Umidade")){
+                        temp=temp.replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                        estacao1.getDados().setTemperatura(temp);
+                    }else if(sensor.contains("HR")){
                         String umid = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"%";
-                        dados.setUmidade(umid);
-                    }else if(sensor.contains("Vento")){
+                        estacao1.getDados().setUmidade(umid);
+                    }else if(sensor.contains("VI")){
                         String vent = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"Km/h";
-                        dados.setVento(vent);
+                        estacao1.getDados().setVento(vent);
                     }else if(sensor.contains("PM10")){
                         String p10 = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setPm10(p10);
+                        estacao1.getDados().setPm10(p10);
                     }else if(sensor.contains("PM25")){
                         String p25 = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setPm25(p25);
+                        estacao1.getDados().setPm25(p25);
                     }else if(sensor.contains("NO2")){
                         String no = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setNo2(no);
-                    }else if(sensor.contains("Veiculos")){
-                        String vei = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setContVeiculos(vei);
+                        estacao1.getDados().setNo2(no);
+                    }else if(sensor.contains("SO2")){
+                        String no2 = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                        estacao1.getDados().setSo2(no2);
+                    }else if(sensor.contains("O3")){
+                        String o3 = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                        estacao1.getDados().setO3(o3);
                     }
-                    estacao1.setDados(dados);
-                }else if(sensor.contains("_2")){
-                    DataSensors dados = new DataSensors();
-                    Log.info("tipo 2",sensor);
-                    if(sensor.contains("Temperatura")){
+                }else if(sensor.contains("TEMP0002") || sensor.contains("HR0002") || sensor.contains("VI0002") || sensor.contains("PM100002") ||
+                        sensor.contains("PM250002") || sensor.contains("SO20002") || sensor.contains("NO20002") || sensor.contains("O30002")){
+                    if(sensor.contains("TEMP")){
                         String temp = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"ºC";
-                        dados.setTemperatura(temp);
-                    }else if(sensor.contains("Umidade")){
+                        temp=temp.replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                        estacao2.getDados().setTemperatura(temp);
+                    }else if(sensor.contains("HR")){
                         String umid = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"%";
-                        dados.setUmidade(umid);
-                    }else if(sensor.contains("Vento")){
+                        estacao2.getDados().setUmidade(umid);
+                    }else if(sensor.contains("VI")){
                         String vent = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"Km/h";
-                        dados.setVento(vent);
+                        estacao2.getDados().setVento(vent);
                     }else if(sensor.contains("PM10")){
                         String p10 = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setPm10(p10);
+                        estacao2.getDados().setPm10(p10);
                     }else if(sensor.contains("PM25")){
                         String p25 = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setPm25(p25);
+                        estacao2.getDados().setPm25(p25);
                     }else if(sensor.contains("NO2")){
                         String no = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setNo2(no);
-                    }else if(sensor.contains("Veiculos")){
-                        String vei = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setContVeiculos(vei);
+                        estacao2.getDados().setNo2(no);
+                    }else if(sensor.contains("SO2")){
+                        String no = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                        estacao2.getDados().setSo2(no);
+                    }else if(sensor.contains("O3")) {
+                        String no = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                        estacao2.getDados().setO3(no);
                     }
-                    estacao2.setDados(dados);
-                }else if(sensor.contains("_3")){
-                    DataSensors dados = new DataSensors();
-                    Log.info("tipo 3",sensor);
-                    if(sensor.contains("Temperatura")){
+                }else if(sensor.contains("TEMP0003") || sensor.contains("HR0003") || sensor.contains("VI0003") || sensor.contains("PM100003") ||
+                        sensor.contains("PM250003") || sensor.contains("SO20003") || sensor.contains("NO20003") || sensor.contains("O30003")){
+                    if(sensor.contains("TEMP")){
                         String temp = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"ºC";
-                        dados.setTemperatura(temp);
-                    }else if(sensor.contains("Umidade")){
+                        temp=temp.replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                        estacao3.getDados().setTemperatura(temp);
+                    }else if(sensor.contains("HR")){
                         String umid = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"%";
-                        dados.setUmidade(umid);
-                    }else if(sensor.contains("Vento")){
+                        estacao3.getDados().setUmidade(umid);
+                    }else if(sensor.contains("VI")){
                         String vent = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"Km/h";
-                        dados.setVento(vent);
+                        estacao3.getDados().setVento(vent);
                     }else if(sensor.contains("PM10")){
                         String p10 = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setPm10(p10);
+                        estacao3.getDados().setPm10(p10);
                     }else if(sensor.contains("PM25")){
                         String p25 = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setPm25(p25);
+                        estacao3.getDados().setPm25(p25);
                     }else if(sensor.contains("NO2")){
                         String no = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setNo2(no);
-                    }else if(sensor.contains("Veiculos")){
-                        String vei = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setContVeiculos(vei);
+                        estacao3.getDados().setNo2(no);
+                    }else if(sensor.contains("SO2")){
+                        String no = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                        estacao3.getDados().setSo2(no);
+                    }else if(sensor.contains("O3")){
+                        String no = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                        estacao3.getDados().setO3(no);
                     }
-                    estacao3.setDados(dados);
-                }else if(sensor.contains("_4")){
-                    DataSensors dados = new DataSensors();
-                    if(sensor.contains("Temperatura")){
+                }else if(sensor.contains("TEMP0004") || sensor.contains("HR0004") || sensor.contains("VI0004") || sensor.contains("PM100004") ||
+                        sensor.contains("PM250004") || sensor.contains("SO20004") || sensor.contains("NO20004") || sensor.contains("O30004")){
+                    if(sensor.contains("TEMP")){
                         String temp = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"ºC";
-                        dados.setTemperatura(temp);
-                    }else if(sensor.contains("Umidade")){
+                        temp=temp.replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                        estacao4.getDados().setTemperatura(temp);
+                    }else if(sensor.contains("HR")){
                         String umid = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"%";
-                        dados.setUmidade(umid);
-                    }else if(sensor.contains("Vento")){
+                        estacao4.getDados().setUmidade(umid);
+                    }else if(sensor.contains("VI")){
                         String vent = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"Km/h";
-                        dados.setVento(vent);
+                        estacao4.getDados().setVento(vent);
                     }else if(sensor.contains("PM10")){
                         String p10 = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setPm10(p10);
+                        estacao4.getDados().setPm10(p10);
                     }else if(sensor.contains("PM25")){
                         String p25 = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setPm25(p25);
+                        estacao4.getDados().setPm25(p25);
                     }else if(sensor.contains("NO2")){
                         String no = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setNo2(no);
-                    }else if(sensor.contains("Veiculos")){
-                        String vei = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setContVeiculos(vei);
+                        estacao4.getDados().setNo2(no);
+                    }else if(sensor.contains("SO2")){
+                        String no = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                        estacao4.getDados().setSo2(no);
+                    }else if(sensor.contains("O3")){
+                        String no = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                        estacao4.getDados().setO3(no);
                     }
-                    estacao4.setDados(dados);
-                }else if(sensor.contains("_5")){
-                    DataSensors dados = new DataSensors();
-                    if(sensor.contains("Temperatura")){
+                }else if(sensor.contains("TEMP0005") || sensor.contains("HR0005") || sensor.contains("VI0005") || sensor.contains("PM100005") ||
+                        sensor.contains("PM250005") || sensor.contains("SO20005") || sensor.contains("NO20005") || sensor.contains("O30005")){
+                    if(sensor.contains("TEMP")){
                         String temp = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"ºC";
-                        dados.setTemperatura(temp);
-                    }else if(sensor.contains("Umidade")){
+                        temp=temp.replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                        estacao5.getDados().setTemperatura(temp);
+                    }else if(sensor.contains("HR")){
                         String umid = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"%";
-                        dados.setUmidade(umid);
-                    }else if(sensor.contains("Vento")){
+                        estacao5.getDados().setUmidade(umid);
+                    }else if(sensor.contains("VI")){
                         String vent = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"Km/h";
-                        dados.setVento(vent);
+                        estacao5.getDados().setVento(vent);
                     }else if(sensor.contains("PM10")){
                         String p10 = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setPm10(p10);
+                        estacao5.getDados().setPm10(p10);
                     }else if(sensor.contains("PM25")){
                         String p25 = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setPm25(p25);
+                        estacao5.getDados().setPm25(p25);
                     }else if(sensor.contains("NO2")){
                         String no = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setNo2(no);
-                    }else if(sensor.contains("Veiculos")){
-                        String vei = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setContVeiculos(vei);
+                        estacao5.getDados().setNo2(no);
+                    }else if(sensor.contains("SO2")){
+                        String no = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                        estacao5.getDados().setSo2(no);
+                    }else if(sensor.contains("O3")){
+                        String no = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                        estacao5.getDados().setO3(no);
                     }
-                    estacao5.setDados(dados);
-                }else if(sensor.contains("_6")){
-                    DataSensors dados = new DataSensors();
-                    if(sensor.contains("Temperatura")){
+                }else if(sensor.contains("TEMP0006") || sensor.contains("HR0006") || sensor.contains("VI0002") || sensor.contains("PM100006") ||
+                        sensor.contains("PM250006") || sensor.contains("SO20006") || sensor.contains("NO20002") || sensor.contains("O30006")){
+                    if(sensor.contains("TEMP")){
                         String temp = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"ºC";
-                        dados.setTemperatura(temp);
-                    }else if(sensor.contains("Umidade")){
+                        temp=temp.replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                        estacao6.getDados().setTemperatura(temp);
+                    }else if(sensor.contains("HR")){
                         String umid = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"%";
-                        dados.setUmidade(umid);
-                    }else if(sensor.contains("Vento")){
+                        estacao6.getDados().setUmidade(umid);
+                    }else if(sensor.contains("VI")){
                         String vent = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"Km/h";
-                        dados.setVento(vent);
+                        estacao6.getDados().setVento(vent);
                     }else if(sensor.contains("PM10")){
                         String p10 = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setPm10(p10);
+                        estacao6.getDados().setPm10(p10);
                     }else if(sensor.contains("PM25")){
                         String p25 = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setPm25(p25);
+                        estacao6.getDados().setPm25(p25);
                     }else if(sensor.contains("NO2")){
                         String no = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setNo2(no);
-                    }else if(sensor.contains("Veiculos")){
-                        String vei = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setContVeiculos(vei);
+                        estacao6.getDados().setNo2(no);
+                    }else if(sensor.contains("SO2")){
+                        String no = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                        estacao6.getDados().setSo2(no);
+                    }else if(sensor.contains("O3")){
+                        String no = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                        estacao6.getDados().setO3(no);
                     }
-                    estacao6.setDados(dados);
-                }else if(sensor.contains("_7")){
-                    DataSensors dados = new DataSensors();
-                   if(sensor.contains("Temperatura")){
-                       String temp = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "")+"ºC";
-                       dados.setTemperatura(temp);
-                    }else if(sensor.contains("Umidade")){
-                       String umid = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"%";
-                      dados.setUmidade(umid);
-                    }else if(sensor.contains("Vento")){
-                       String vent = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"Km/h";
-                      dados.setVento(vent);
-                    }else if(sensor.contains("PM10")){
-                       String p10 = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                      dados.setPm10(p10);
-                    }else if(sensor.contains("PM25")){
-                       String p25 = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                       dados.setPm25(p25);
-                    }else if(sensor.contains("NO2")){
-                       String no = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                       dados.setNo2(no);
-                    }else if(sensor.contains("Veiculos")){
-                       String vei = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                       dados.setContVeiculos(vei);
-                    }
-                   estacao7.setDados(dados);
-                }else if(sensor.contains("_8")){
-                    DataSensors dados = new DataSensors();
-                   if(sensor.contains("Temperatura")){
+                }else if(sensor.contains("TEMP0007") || sensor.contains("HR0007") || sensor.contains("VI0007") || sensor.contains("PM100007") ||
+                        sensor.contains("PM250007") || sensor.contains("SO20007") || sensor.contains("NO20007") || sensor.contains("O30007")){
+                   if(sensor.contains("TEMP")){
                        String temp = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"ºC";
-                       dados.setTemperatura(temp);
-                    }else if(sensor.contains("Umidade")){
+                       temp=temp.replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                       estacao7.getDados().setTemperatura(temp);
+                    }else if(sensor.contains("HR")){
                        String umid = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"%";
-                        dados.setUmidade(umid);
-                    }else if(sensor.contains("Vento")){
+                       estacao7.getDados().setUmidade(umid);
+                    }else if(sensor.contains("VI")){
                        String vent = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"Km/h";
-                        dados.setVento(vent);
+                       estacao7.getDados().setVento(vent);
                     }else if(sensor.contains("PM10")){
                        String p10 = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                       dados.setPm10(p10);
+                       estacao7.getDados().setPm10(p10);
                     }else if(sensor.contains("PM25")){
                        String p25 = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                      dados.setPm25(p25);
+                       estacao7.getDados().setPm25(p25);
                     }else if(sensor.contains("NO2")){
                        String no = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                       dados.setNo2(no);
-                    }else if(sensor.contains("Veiculos")){
-                       String vei = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                       dados.setContVeiculos(vei);
-                    }
-                   estacao8.setDados(dados);
-                }else if(sensor.contains("_9")){
-                    DataSensors dados = new DataSensors();
-                  if(sensor.contains("Temperatura")){
+                       estacao7.getDados().setNo2(no);
+                    }else if(sensor.contains("SO2")){
+                       String no = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                       estacao7.getDados().setSo2(no);
+                   }else if(sensor.contains("O3")){
+                       String no = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                       estacao7.getDados().setO3(no);
+                   }
+                }else if(sensor.contains("TEMP0008") || sensor.contains("HR0008") || sensor.contains("VI0008") || sensor.contains("PM100008") ||
+                        sensor.contains("PM250008") || sensor.contains("SO20008") || sensor.contains("NO20008") || sensor.contains("O30008")){
+                   if(sensor.contains("TEMP")){
+                       String temp = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"ºC";
+                       temp=temp.replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                       estacao8.getDados().setTemperatura(temp);
+                    }else if(sensor.contains("HR")){
+                       String umid = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"%";
+                       estacao8.getDados().setUmidade(umid);
+                    }else if(sensor.contains("VI")){
+                       String vent = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"Km/h";
+                       estacao8.getDados().setVento(vent);
+                    }else if(sensor.contains("PM10")){
+                       String p10 = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                       estacao8.getDados().setPm10(p10);
+                    }else if(sensor.contains("PM25")){
+                       String p25 = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                       estacao8.getDados().setPm25(p25);
+                    }else if(sensor.contains("NO2")){
+                       String no = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                       estacao8.getDados().setNo2(no);
+                    }else if(sensor.contains("SO2")){
+                       String no = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                       estacao8.getDados().setSo2(no);
+                   }else if(sensor.contains("O3")){
+                       String no = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                       estacao8.getDados().setO3(no);
+                   }
+                }else if(sensor.contains("TEMP0009") || sensor.contains("HR0009") || sensor.contains("VI0009") || sensor.contains("PM100009") ||
+                        sensor.contains("PM250009") || sensor.contains("SO20009") || sensor.contains("NO20009") || sensor.contains("O30009")){
+                  if(sensor.contains("TEMP")){
                         String temp = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"ºC";
-                        dados.setTemperatura(temp);
-                    }else if(sensor.contains("Umidade")){
+                      temp=temp.replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                      estacao9.getDados().setTemperatura(temp);
+                    }else if(sensor.contains("HR")){
                       String umid = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"%";
-                      dados.setUmidade(umid);
-                    }else if(sensor.contains("Vento")){
+                      estacao9.getDados().setUmidade(umid);
+                    }else if(sensor.contains("VI")){
                       String vent = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"Km/h";
-                      dados.setVento(vent);
+                      estacao9.getDados().setVento(vent);
                     }else if(sensor.contains("PM10")){
                       String p10 = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                     dados.setPm10(p10);
+                      estacao9.getDados().setPm10(p10);
                     }else if(sensor.contains("PM25")){
                       String p25 = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                     dados.setPm25(p25);
+                      estacao9.getDados().setPm25(p25);
                     }else if(sensor.contains("NO2")){
                       String no = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                      dados.setNo2(no);
-                    }else if(sensor.contains("Veiculos")){
-                      String vei = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                      dados.setContVeiculos(vei);
-                    }
-                  estacao9.setDados(dados);
-                }else if(sensor.contains("_10")&& !sensor.contains("_1027")&& !sensor.contains("_1079")){
-                    DataSensors dados = new DataSensors();
-                if(sensor.contains("Temperatura")){
+                      estacao9.getDados().setNo2(no);
+                    }else if(sensor.contains("SO2")){
+                      String no = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                      estacao9.getDados().setSo2(no);
+                  }else if(sensor.contains("O3")){
+                      String no = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                      estacao9.getDados().setO3(no);
+                  }
+                }else if(sensor.contains("TEMP0010") || sensor.contains("HR0010") || sensor.contains("VI0010") || sensor.contains("PM100010") ||
+                        sensor.contains("PM250010") || sensor.contains("SO20010") || sensor.contains("NO20010") || sensor.contains("O30010")){
+                if(sensor.contains("TEMP")){
                     String temp = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"ºC";
-                     dados.setTemperatura(temp);
-                    }else if(sensor.contains("Umidade")){
+                    temp=temp.replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                    estacao10.getDados().setTemperatura(temp);
+                    }else if(sensor.contains("HR")){
                         String umid = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"%";
-                        dados.setUmidade(umid);
-                    }else if(sensor.contains("Vento")){
+                    estacao10.getDados().setUmidade(umid);
+                    }else if(sensor.contains("VI")){
                         String vent = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"Km/h";
-                        dados.setVento(vent);
+                    estacao10.getDados().setVento(vent);
                     }else if(sensor.contains("PM10")){
                         String p10 = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setPm10(p10);
+                    estacao10.getDados().setPm10(p10);
                     }else if(sensor.contains("PM25")){
                         String p25 = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setPm25(p25);
+                    estacao10.getDados().setPm25(p25);
                     }else if(sensor.contains("NO2")){
                         String no = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setNo2(no);
-                    }else if(sensor.contains("Veiculos")){
-                        String vei = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setContVeiculos(vei);
-                    }
-                estacao10.setDados(dados);
-                }else if(sensor.contains("_50")){
-                    DataSensors dados = new DataSensors();
-                 if(sensor.contains("Temperatura")){
+                    estacao10.getDados().setNo2(no);
+                    }else if(sensor.contains("SO2")){
+                    String no = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                    estacao10.getDados().setSo2(no);
+                }else if(sensor.contains("O3")){
+                    String no = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                    estacao10.getDados().setO3(no);
+                }
+                }else if(sensor.contains("TEMP0011") || sensor.contains("HR0011") || sensor.contains("VI0011") || sensor.contains("PM100011") ||
+                        sensor.contains("PM250011") || sensor.contains("SO20011") || sensor.contains("NO20011") || sensor.contains("O30011")){
+                 if(sensor.contains("TEMP")){
                      String temp = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"ºC";
-                     dados.setTemperatura(temp);
-                    }else if(sensor.contains("Umidade")){
+                     temp=temp.replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                     estacao11.getDados().setTemperatura(temp);
+                    }else if(sensor.contains("HR")){
                         String umid = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"%";
-                        dados.setUmidade(umid);
-                    }else if(sensor.contains("Vento")){
+                     estacao11.getDados().setUmidade(umid);
+                    }else if(sensor.contains("VI")){
                         String vent = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"Km/h";
-                        dados.setVento(vent);
+                     estacao11.getDados().setVento(vent);
                     }else if(sensor.contains("PM10")){
                         String p10 = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setPm10(p10);
+                     estacao11.getDados().setPm10(p10);
                     }else if(sensor.contains("PM25")){
                         String p25 = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setPm25(p25);
+                     estacao11.getDados().setPm25(p25);
                     }else if(sensor.contains("NO2")){
                         String no = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setNo2(no);
-                    }else if(sensor.contains("Veiculos")){
-                        String vei = solution.get("result").toString().replace("h^^ttp://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setContVeiculos(vei);
-                    }
-                 estacao11.setDados(dados);
-                }else if(sensor.contains("_1027")){
-                    DataSensors dados = new DataSensors();
-                    if(sensor.contains("Temperatura")){
+                     estacao11.getDados().setNo2(no);
+                    }else if(sensor.contains("SO2")){
+                     String no = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                     estacao11.getDados().setSo2(no);
+                 }else if(sensor.contains("O3")){
+                     String no = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                     estacao11.getDados().setO3(no);
+                 }
+                }else if(sensor.contains("TEMP0012") || sensor.contains("HR0012") || sensor.contains("VI0012") || sensor.contains("PM100012") ||
+                        sensor.contains("PM250012") || sensor.contains("SO20012") || sensor.contains("NO20012") || sensor.contains("O30012")){
+                    if(sensor.contains("TEMP")){
                         String temp = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"ºC";
-                       dados.setTemperatura(temp);
-                    }else if(sensor.contains("Umidade")){
+                        temp=temp.replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                        estacao12.getDados().setTemperatura(temp);
+                    }else if(sensor.contains("HR")){
                         String umid = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"%";
-                        dados.setUmidade(umid);
-                    }else if(sensor.contains("Vento")){
+                        estacao12.getDados().setUmidade(umid);
+                    }else if(sensor.contains("VI")){
                         String vent = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"Km/h";
-                        dados.setVento(vent);
+                        estacao12.getDados().setVento(vent);
                     }else if(sensor.contains("PM10")){
                         String p10 = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setPm10(p10);
+                        estacao12.getDados().setPm10(p10);
                     }else if(sensor.contains("PM25")){
                         String p25 = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setPm25(p25);
+                        estacao12.getDados().setPm25(p25);
                     }else if(sensor.contains("NO2")){
                         String no = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setNo2(no);
-                    }else if(sensor.contains("Veiculos")){
-                        String vei = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                       dados.setContVeiculos(vei);
-                    }
-                    estacao12.setDados(dados);
-                }else if(sensor.contains("_1079")){
-                    DataSensors dados = new DataSensors();
-                    if(sensor.contains("Temperatura")){
-                        String temp = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"ºC";
-                        dados.setTemperatura(temp);
-                    }else if(sensor.contains("Umidade")){
-                        String umid = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"%";
-                       dados.setUmidade(umid);
-                    }else if(sensor.contains("Vento")){
-                        String vent = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#decimal", "")+"Km/h";
-                        dados.setVento(vent);
-                    }else if(sensor.contains("PM10")){
-                        String p10 = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setPm10(p10);
-                    }else if(sensor.contains("PM25")){
-                        String p25 = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setPm25(p25);
-                    }else if(sensor.contains("NO2")){
-                       String no = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                       dados.setNo2(no);
-                    }else if(sensor.contains("Veiculos")){
-                        String vei = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
-                        dados.setContVeiculos(vei);
+                        estacao12.getDados().setNo2(no);
+                    }else if(sensor.contains("SO2")){
+                        String no = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                        estacao12.getDados().setSo2(no);
+                    }else if(sensor.contains("O3")){
+                        String no = solution.get("result").toString().replace("^^http://www.w3.org/2001/XMLSchema#integer", "");
+                        estacao12.getDados().setO3(no);
                     }
                 }
-
-                Log.info("onPosExecuteMapa", "adcionando observações");
             }
             ListaEstacoes.add(estacao1);ListaEstacoes.add(estacao2);ListaEstacoes.add(estacao3);ListaEstacoes.add(estacao4);ListaEstacoes.add(estacao5);
             ListaEstacoes.add(estacao6);ListaEstacoes.add(estacao7);ListaEstacoes.add(estacao8);ListaEstacoes.add(estacao9);ListaEstacoes.add(estacao10);
-            ListaEstacoes.add(estacao11);ListaEstacoes.add(estacao12);ListaEstacoes.add(estacao13);
+            ListaEstacoes.add(estacao11);ListaEstacoes.add(estacao12);
             marcarMapa();
-
         }
     }
-
 }
