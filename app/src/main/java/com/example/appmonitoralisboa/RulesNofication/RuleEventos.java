@@ -5,10 +5,15 @@ import android.content.Context;
 import android.os.AsyncTask;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+
 import com.example.appmonitoralisboa.model.DataSensors;
 
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.hp.hpl.jena.update.UpdateFactory;
 import com.hp.hpl.jena.update.UpdateProcessor;
 import com.hp.hpl.jena.update.UpdateRequest;
@@ -36,6 +41,7 @@ public class RuleEventos {
             ev.setEndProcess(dataFormatada);
             ev.setStartStream(dataFormatada);
             ev.setEndStream(dataFormatada);
+            ev.setTypeSensor("Temperatura");
             insert(ev);
             Log.i("testeNotificação", "volta para o if");
         }
@@ -51,6 +57,7 @@ public class RuleEventos {
             ev.setEndProcess(dataFormatada);
             ev.setStartStream(dataFormatada);
             ev.setEndStream(dataFormatada);
+            ev.setTypeSensor("Intensidade do Vento");
             insert(ev);
         }
         if ((Double.parseDouble(dados.getUmidade()) < 30) && (Double.parseDouble(dados.getUmidade()) > 0)) {
@@ -65,6 +72,7 @@ public class RuleEventos {
             ev.setEndProcess(dataFormatada);
             ev.setStartStream(dataFormatada);
             ev.setEndStream(dataFormatada);
+            ev.setTypeSensor("Umidade");
             insert(ev);
         }
         if (Double.parseDouble(dados.getPm10()) > 99) {
@@ -79,6 +87,7 @@ public class RuleEventos {
             ev.setEndProcess(dataFormatada);
             ev.setStartStream(dataFormatada);
             ev.setEndStream(dataFormatada);
+            ev.setTypeSensor("PM10");
             insert(ev);
         }
         if (Double.parseDouble(dados.getPm25()) > 50) {
@@ -93,6 +102,7 @@ public class RuleEventos {
             ev.setEndProcess(dataFormatada);
             ev.setStartStream(dataFormatada);
             ev.setEndStream(dataFormatada);
+            ev.setTypeSensor("PM25");
             insert(ev);
         }
         if (Double.parseDouble(dados.getNo2()) > 400) {
@@ -107,6 +117,7 @@ public class RuleEventos {
             ev.setEndProcess(dataFormatada);
             ev.setStartStream(dataFormatada);
             ev.setEndStream(dataFormatada);
+            ev.setTypeSensor("NO2");
             insert(ev);
         }
         if (Double.parseDouble(dados.getO3()) > 240) {
@@ -121,6 +132,7 @@ public class RuleEventos {
             ev.setEndProcess(dataFormatada);
             ev.setStartStream(dataFormatada);
             ev.setEndStream(dataFormatada);
+            ev.setTypeSensor("O3");
             insert(ev);
         }
         if (Double.parseDouble(dados.getSo2()) > 500) {
@@ -135,15 +147,32 @@ public class RuleEventos {
             ev.setEndProcess(dataFormatada);
             ev.setStartStream(dataFormatada);
             ev.setEndStream(dataFormatada);
+            ev.setTypeSensor("SO2");
             insert(ev);
         }
     }
 
     public void insert(Event ev) {
-        DatabaseReference referencia = FirebaseDatabase.getInstance().getReference();
+       /* DatabaseReference referencia = FirebaseDatabase.getInstance().getReference();
         DatabaseReference eventos= referencia.child("Eventos");
         Event evento = ev;
-        eventos.push().setValue(evento);
+        eventos.push().setValue(evento);*/
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        db.collection("Eventos")
+                .add(ev)
+                .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
+                    @Override
+                    public void onSuccess(DocumentReference documentReference) {
+                        Log.d("teste", "DocumentSnapshot added with ID: " + documentReference.getId());
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.w("teste", "Error adding document", e);
+                    }
+                });
+
 
     }
 }

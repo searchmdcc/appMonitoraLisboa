@@ -224,7 +224,7 @@ public class MainActivity extends AppCompatActivity {
             temperatura.setText("Temperatura: "+dados.getTemperatura()+"ºC");
             umidade.setText("Umidade: "+dados.getUmidade()+"%");
             vento.setText("Vento: "+dados.getVento()+"Km/h");
-           // dados.setTemperatura("40");
+            dados.setVento("80");
             RuleEventos re  = new RuleEventos();
             re.verificarEventos(dados, getApplicationContext());
 
