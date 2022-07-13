@@ -6,7 +6,9 @@ public class Estacoes {
     private String endereco;
     private String est;
     private DataSensors dados=new DataSensors();
-
+    public Estacoes(){
+        dados.inicializar();
+    }
     public DataSensors getDados() {
         return dados;
     }

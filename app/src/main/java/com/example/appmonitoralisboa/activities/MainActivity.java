@@ -38,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        dados.inicializar();
         temperatura = findViewById(R.id.txtTemperatura);
         umidade = findViewById(R.id.txtUmidade);
         vento = findViewById(R.id.txtVento);
@@ -51,14 +51,15 @@ public class MainActivity extends AppCompatActivity {
         SimpleDateFormat formataData = new SimpleDateFormat("dd-MM-yyyy HH:MM");
         Date d = new Date();
         String dataFormatada = formataData.format(d);
-        data.setText("Data: " + dataFormatada);
-        inicializarDados id = new inicializarDados();
-        id.execute();
+       // data.setText("Data: " + dataFormatada);
+        data.setText("Data: 10-05-2022 16:31");
+        ProcessarDadosTempo pd = new ProcessarDadosTempo();
+        pd.execute();
 
         atualizar.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                ProcessarDados pd = new ProcessarDados();
+                ProcessarDadosTempo pd = new ProcessarDadosTempo();
                 pd.execute();
             }
         });
@@ -76,38 +77,40 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
-
     }
 
-    class ProcessarDados extends AsyncTask<Void, Void, ResultSet>{
+
+    class ProcessarDadosTempo extends AsyncTask<Void, Void, ResultSet>{
         @Override
         protected ResultSet doInBackground(Void... voids) {
-            String consulta = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
-                    "PREFIX sosa: <http://www.w3.org/ns/sosa/>\n" +
+            String consulta = "PREFIX sosa: <http://www.w3.org/ns/sosa/>\n" +
+                    "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
+                    "PREFIX iotl: <http://purl.oclc.org/NET/UNIS/fiware/iot-lite/>\n" +
+                    "prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n" +
                     "PREFIX iots: <http://purl.org/iot/ontology/iot-stream#>\n" +
                     "PREFIX ex: <http://example.com/>\n" +
-                    "select ?temp ?vent ?umid where { \n" +
-                    "\t?t rdf:type iots:StreamObservation;\n" +
-                    "\t    \tsosa:hasSimpleResult ?temp;\n" +
-                    "     \tsosa:hasResultTime 202205101100;\n" +
-                    "            \tiots:belongsTo ?iot.\n" +
-                    "    ?iot iots:analyzedBy ?analytics.\n" +
-                    "    ?analytics ex:sensorType \"Temperatura\".\n" +
-                    "    \n" +
-                    "    ?v rdf:type iots:StreamObservation;\n" +
-                    "\t    \tsosa:hasSimpleResult ?vent;\n" +
-                    "     \tsosa:hasResultTime 202205101100;\n" +
-                    "            \tiots:belongsTo ?iotV.\n" +
-                    "    ?iotV iots:analyzedBy ?analyticsV.\n" +
-                    "    ?analyticsV ex:sensorType \"Intensidade_do_vento\".\n" +
-                    "    \n" +
-                    "        ?u rdf:type iots:StreamObservation;\n" +
-                    "\t    \tsosa:hasSimpleResult ?umid;\n" +
-                    "     \tsosa:hasResultTime 202205101100;\n" +
-                    "            \tiots:belongsTo ?iotU.\n" +
-                    "    ?iotU iots:analyzedBy ?analyticsU.\n" +
-                    "    ?analyticsU ex:sensorType \"Umidade_relativa\".\n" +
+                    "select ?valueTemp ?iotStreamTemp ?valueUmid ?iotStreamUmid ?valueVent ?iotStreamVent  where { \n" +
+                    "?obs rdf:type iots:StreamObservation;\n" +
+                    "   sosa:hasSimpleResult ?valueTemp;\n" +
+                    "  iots:windowStart 202205101100;\n" +
+                    "  iots:belongsTo ?iotStreamTemp.\n" +
+                    "?iotStreamTemp iots:analyzedBy ?analyticsTemp.\n" +
+                    "?analyticsTemp iots:parameters \"Temperatura\".\n" +
                     "\n" +
+                    "?obs2 rdf:type iots:StreamObservation;\n" +
+                    "   sosa:hasSimpleResult ?valueUmid;\n" +
+                    "  iots:windowStart 202205101100;\n" +
+                    "  iots:belongsTo ?iotStreamUmid.\n" +
+                    "?iotStreamUmid iots:analyzedBy ?analyticsUmid.\n" +
+                    "?analyticsUmid iots:parameters \"Umidade_relativa\".\n" +
+                    "  \n" +
+                    "?obs3 rdf:type iots:StreamObservation;\n" +
+                    "   sosa:hasSimpleResult ?valueVent;\n" +
+                    "  iots:windowStart 202205101100;\n" +
+                    "  iots:belongsTo ?iotStreamVent.\n" +
+                    "?iotStreamVent iots:analyzedBy ?analyticsVent.\n" +
+                    "?analyticsVent iots:parameters \"Intensidade_do_vento\".\n" +
+                    "     \n" +
                     "} ";
             Query query = QueryFactory.create(consulta);
             QueryExecution qexec = QueryExecutionFactory.createServiceRequest("http://172.18.0.1:3030/IoTStream/query", query);
@@ -117,118 +120,33 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(ResultSet results) {
             super.onPostExecute(results);
+            Temperatura t = new Temperatura();
+            Umidade u = new Umidade();
+            Vento v = new Vento();
             while (results.hasNext()) {
                 QuerySolution solution = results.nextSolution();
-                dados.setTemperatura(new DecimalFormat("#,##0.00").format(solution.getLiteral("temp").getDouble()));
-                dados.setUmidade(new DecimalFormat("#,##0.00").format(solution.getLiteral("umid").getDouble()));
-                dados.setVento(new DecimalFormat("#,##0.00").format(solution.getLiteral("vent").getDouble()));
+                t.setTemperatura(String.valueOf(new DecimalFormat("#,##0.00").format(solution.getLiteral("valueTemp").getDouble())));
+                t.setIotStream(solution.getResource("iotStreamTemp").toString());
+                u.setUmidade(String.valueOf(new DecimalFormat("#,##0.00").format(solution.getLiteral("valueUmid").getDouble())));
+                u.setIotStream(solution.getResource("iotStreamUmid").toString());
+                v.setVento(String.valueOf(new DecimalFormat("#,##0.00").format(solution.getLiteral("valueVent").getDouble())));
+                v.setIotStream(solution.getResource("iotStreamVent").toString());
+                dados.setTemperatura(t);
+                dados.setUmidade(u);
+                dados.setVento(v);
             }
             //hora do sistema
             /*SimpleDateFormat formataData = new SimpleDateFormat("dd-MM-yyyy HH:mm");
             Date data = new Date();
             String dataFormatada = formataData.format(data);*/
-            temperatura.setText("Temperatura: "+dados.getTemperatura()+"ºC");
-            umidade.setText("Umidade: "+dados.getUmidade()+"%");
-            vento.setText("Vento: "+dados.getVento()+"Km/h");
-
+            temperatura.setText("Temperatura: "+dados.getTemperatura().getTemperatura()+"ºC");
+            umidade.setText("Umidade: "+dados.getUmidade().getUmidade()+"%");
+            vento.setText("Vento: "+dados.getVento().getVento()+"Km/h");
+            RuleEventos re  = new RuleEventos();
+            re.verificarEventosTempo(dados, getApplicationContext());
            // umidade.setText(dataFormatada);
 
         }
-    }
-
-
-    class inicializarDados extends AsyncTask<Void, Void, ResultSet>{
-        @Override
-        protected ResultSet doInBackground(Void... voids) {
-            String consulta = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
-                    "PREFIX sosa: <http://www.w3.org/ns/sosa/>\n" +
-                    "PREFIX iots: <http://purl.org/iot/ontology/iot-stream#>\n" +
-                    "PREFIX ex: <http://example.com/>\n" +
-                    "select ?temp ?vent ?umid ?pm10 ?pm25 ?no2 ?so2 ?o3 where { \n" +
-                    "\t?t rdf:type iots:StreamObservation;\n" +
-                    "\t    \tsosa:hasSimpleResult ?temp;\n" +
-                    "     \tsosa:hasResultTime 202205101100;\n" +
-                    "            \tiots:belongsTo ?iot.\n" +
-                    "    ?iot iots:analyzedBy ?analytics.\n" +
-                    "    ?analytics ex:sensorType \"Temperatura\".\n" +
-                    "    \n" +
-                    "    ?v rdf:type iots:StreamObservation;\n" +
-                    "\t    \tsosa:hasSimpleResult ?vent;\n" +
-                    "     \tsosa:hasResultTime 202205101100;\n" +
-                    "            \tiots:belongsTo ?iotV.\n" +
-                    "    ?iotV iots:analyzedBy ?analyticsV.\n" +
-                    "    ?analyticsV ex:sensorType \"Intensidade_do_vento\".\n" +
-                    "    \n" +
-                    "        ?u rdf:type iots:StreamObservation;\n" +
-                    "\t    \tsosa:hasSimpleResult ?umid;\n" +
-                    "     \tsosa:hasResultTime 202205101100;\n" +
-                    "            \tiots:belongsTo ?iotU.\n" +
-                    "    ?iotU iots:analyzedBy ?analyticsU.\n" +
-                    "    ?analyticsU ex:sensorType \"Umidade_relativa\".\n" +
-                    "?obs1 rdf:type iots:StreamObservation;\n" +
-                    "\t    \tsosa:hasSimpleResult ?pm10;\n" +
-                    "     \tsosa:hasResultTime 202205101100;\n" +
-                    "            \tiots:belongsTo ?iotPm10.\n" +
-                    "    ?iotPm10 iots:analyzedBy ?analyticsPm10.\n" +
-                    "    ?analyticsPm10 ex:sensorType \"PM10\".\n" +
-                    "    \n" +
-                    "    ?obs2 rdf:type iots:StreamObservation;\n" +
-                    "\t    \tsosa:hasSimpleResult ?pm25;\n" +
-                    "     \tsosa:hasResultTime 202205101100;\n" +
-                    "            \tiots:belongsTo ?iotPm25.\n" +
-                    "    ?iotPm25 iots:analyzedBy ?analyticsPm25.\n" +
-                    "    ?analyticsPm25 ex:sensorType \"PM25\".\n" +
-                    "    \n" +
-                    "    ?obs3 rdf:type iots:StreamObservation;\n" +
-                    "\t    \tsosa:hasSimpleResult ?o3;\n" +
-                    "     \tsosa:hasResultTime 202205101100;\n" +
-                    "            \tiots:belongsTo ?iotO3.\n" +
-                    "    ?iotO3 iots:analyzedBy ?analyticsO3.\n" +
-                    "    ?analyticsO3 ex:sensorType \"O3\".\n" +
-                    "    \n" +
-                    " ?obs4 rdf:type iots:StreamObservation;\n" +
-                    "\t    \tsosa:hasSimpleResult ?no2;\n" +
-                    "     \tsosa:hasResultTime 202205101100;\n" +
-                    "            \tiots:belongsTo ?iotNo2.\n" +
-                    "    ?iotNo2 iots:analyzedBy ?analyticsNo2.\n" +
-                    "    ?analyticsNo2 ex:sensorType \"NO2\".\n" +
-                    "  \n" +
-                    "?obs5 rdf:type iots:StreamObservation;\n" +
-                    "\t    \tsosa:hasSimpleResult ?so2;\n" +
-                    "     \tsosa:hasResultTime 202205101100;\n" +
-                    "            \tiots:belongsTo ?iotSo2.\n" +
-                    "    ?iotSo2 iots:analyzedBy ?analyticsSo2.\n" +
-                    "    ?analyticsSo2 ex:sensorType \"SO2\".\n" +
-                    "}  \n";
-            Query query = QueryFactory.create(consulta);
-            QueryExecution qexec = QueryExecutionFactory.createServiceRequest("http://172.18.0.1:3030/IoTStream/query", query);
-            ResultSet results = qexec.execSelect();
-            return results;
-        }
-
-        @Override
-        protected void onPostExecute(ResultSet results) {
-            super.onPostExecute(results);
-            while (results.hasNext()) {
-                QuerySolution solution = results.nextSolution();
-                dados.setTemperatura(new DecimalFormat("#,##0.00").format(solution.getLiteral("temp").getDouble()));
-                dados.setUmidade(new DecimalFormat("#,##0.00").format(solution.getLiteral("umid").getDouble()));
-                dados.setVento(new DecimalFormat("#,##0.00").format(solution.getLiteral("vent").getDouble()));
-                dados.setPm10(new DecimalFormat("#,##0.00").format(solution.getLiteral("pm10").getDouble()));
-                dados.setPm25(new DecimalFormat("#,##0.00").format(solution.getLiteral("pm25").getDouble()));
-                dados.setNo2(new DecimalFormat("#,##0.00").format(solution.getLiteral("no2").getDouble()));
-                dados.setO3(new DecimalFormat("#,##0.00").format(solution.getLiteral("o3").getDouble()));
-                dados.setSo2(new DecimalFormat("#,##0.00").format(solution.getLiteral("so2").getDouble()));
-            }
-
-            temperatura.setText("Temperatura: "+dados.getTemperatura()+"ºC");
-            umidade.setText("Umidade: "+dados.getUmidade()+"%");
-            vento.setText("Vento: "+dados.getVento()+"Km/h");
-            dados.setVento("80");
-            RuleEventos re  = new RuleEventos();
-            re.verificarEventos(dados, getApplicationContext());
-
-            }
     }
 
 
